@@ -1,0 +1,55 @@
+[build-system]
+# 빌드 도구 지정 (Poetry 대신 setuptools 사용)
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "community-project"
+version = "0.1.0"
+description = "FastAPI 기반 커뮤니티 백엔드 시스템"
+readme = "README.md"
+requires-python = ">=3.13.10"
+license = {text = "MIT"}
+authors = [
+    {name = "이준영", email = "jylee0005@gmail.com"}
+]
+
+keywords = [
+    "fastapi",
+    "python",
+    "backend",
+    "community",
+    "rest-api",
+    "aws-ai-school",
+    "layered-architecture"
+]
+
+# 프로젝트 의존성 (pip install 시 설치됨)
+dependencies = [
+    "fastapi>= 0.128.0"
+    "starlette>= 0.50.0"
+    "uvicorn>= 0.40.0"
+    "requests>= 2.32.5",
+    "pandas>= 2.3.3",
+    "jsonschema>= 4.25.1",
+    "jsonschema-specifications>= 2025.9.1",
+    "typing_extensions>= 4.15.0",
+    "typing-inspection>= 0.4.2"
+]
+
+[project.optional-dependencies]
+# 추가 옵션 (예: pip install ".[dev]")
+dev = [
+]
+
+[project.urls]
+Homepage = "https://github.com/80-hours-a-week/2-junyoung-community-be"
+Repository = "https://github.com/80-hours-a-week/2-junyoung-community-be.git"
+
+[tool.setuptools]
+# 소스 코드가 위치한 패키지 폴더 자동 탐색
+packages = {find = {}}
+
+[tool.ruff]
+# ruff 같은 다른 도구의 설정도 여기에 포함 가능
+line-length = 88
