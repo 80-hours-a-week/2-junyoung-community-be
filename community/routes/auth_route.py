@@ -6,13 +6,13 @@ from utils import WrappedAPIRoute
 router = APIRouter(prefix="/api/v1/auth", route_class=WrappedAPIRoute)
 
 @router.post("/signup", status_code=201)
-async def signup(body: dict = Body(...)):
-    return AuthController.signup(body)
+async def signup(response: Response, body: dict = Body(...)):
+    return AuthController.signup(body, response)
 
 @router.post("/login")
 async def login(response: Response, body: dict = Body(...)):
     # 튜플로 나누어 받아서 에러 해결
-    session_id, user_info = AuthController.login(body)
+    session_id, user_info = AuthController.login(body, response)
     
     response.set_cookie(key="session_id", value=session_id, httponly=True)
     
