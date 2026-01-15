@@ -12,9 +12,20 @@ FastAPI를 기반으로 하며, 확장성을 고려한 계층형 아키텍처(Ro
 
 ## 📂 Project Structure
 
-community/
-├── main.py           # 애플리케이션 진입점 및 예외 처리기
-├── utils.py          # 공통 응답 포장(WrappedAPIRoute) 등 유틸리티
-├── routes/           # API 엔드포인트 정의 (Post, Auth)
-├── controllers/      # 비즈니스 로직 처리
-└── models/           # 데이터 관리 및 스키마 (Memory DB 사용)
+```text
+2-junyoung-community-be/
+├── community/                # 메인 패키지 루트
+│   ├── controllers/          # 비즈니스 로직 및 흐름 제어
+│   │   ├── auth_controller.py
+│   │   └── post_controller.py
+│   ├── models/               # 데이터 스토어 및 데이터 접근 로직
+│   │   ├── post_model.py
+│   │   └── user_model.py
+│   ├── routes/               # API 엔드포인트 및 라우팅 설정
+│   │   ├── auth_route.py
+│   │   └── post_route.py
+│   ├── main.py               # 애플리케이션 진입점 및 전역 설정
+│   └── utils.py              # 공통 유틸리티 및 응답 래퍼
+├── .gitignore                # Git 제외 설정
+├── pyproject.toml            # 프로젝트 의존성 관리
+└── README.md                 # 프로젝트 문서
