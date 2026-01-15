@@ -4,7 +4,6 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from routes.post_route import router as post_router
 from routes.auth_route import router as auth_router
-from utils import WrappedAPIRoute
 
 app = FastAPI()
 
