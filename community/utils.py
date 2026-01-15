@@ -1,52 +1,28 @@
 # utils.py
-import json
-from typing import Callable, Any
-from fastapi.routing import APIRoute
+from typing import Any
+from pydantic import BaseModel
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 
-SUCCESS_MESSAGES = {
-    "/api/v1/auth/signup": "REGISTER_SUCCESS",
-    "/api/v1/auth/login": "LOGIN_SUCCESS",
-    "/api/v1/posts": "POST_RETRIEVAL_SUCCESS",
-}
+# 모든 응답의 표준 규격
+class BaseResponse(BaseModel):
+    message: str
+    data: Any = None
 
 class WrappedAPIRoute(APIRoute):
-    def get_route_handler(self) -> Callable:
+    def get_route_handler(self):
         original_handler = super().get_route_handler()
 
         async def custom_handler(request: Request) -> Any:
-            data = await original_handler(request)
+            result = await original_handler(request)
             
-            # 에러 응답은 건드리지 않고 통과시킵니다.
-            if isinstance(data, Response) and data.status_code >= 400:
-                return data
+            # 이미 완벽한 응답(Response) 객체라면 그대로 내보냄 (쿠키 등 포함)
+            if isinstance(result, Response):
+                return result
 
-            # 1. 데이터 본체 추출
-            if isinstance(data, Response):
-                try:
-                    # 기존 응답 바디를 읽어옵니다.
-                    body = json.loads(data.body.decode())
-                except:
-                    body = None
-                status_code = data.status_code
-                headers = dict(data.headers)
-            else:
-                body = data
-                status_code = 200
-                headers = {}
-
-            # 2. 메시지 결정
-            message = SUCCESS_MESSAGES.get(request.url.path, "SUCCESS")
-
-            # 3. 새로운 JSONResponse 생성 (Content-Length 문제를 원천 차단)
-            # headers에서 content-length를 삭제하여 자동 재계산되게 합니다.
-            headers.pop("content-length", None) 
-            
-            return JSONResponse(
-                content={"message": message, "data": body},
-                status_code=status_code,
-                headers=headers
-            )
+            # [핵심] 아무 고민 없이 JSON으로 포장만 해서 보냄
+            # status_code는 이미 요리사가 찍어둔 걸 FastAPI가 알아서 사용함
+            return JSONResponse(content=result.model_dump())
 
         return custom_handler
