@@ -1,7 +1,7 @@
 # routes/post_route.py
 from fastapi import APIRouter, Query, Path, Response, Depends
 from controllers.post_controller import PostController
-from utils import BaseResponse, get_current_user
+from utils import BaseResponse, get_current_user, UserInfo, PostCreateRequest
 
 # router = APIRouter(prefix="/api/v1")
 # utils에 있는 함수로 문지기를 세움
@@ -29,3 +29,13 @@ async def get_post_detail(
     post_id: int = Path(..., ge=1, description="게시글 ID (1 이상)"),
 ):
     return PostController.get_post_detail(post_id, response)
+
+# 게시물 생성
+@router.post("/posts", status_code=201, response_model=BaseResponse)
+async def create_post(
+    response: Response,
+    request: PostCreateRequest,
+    user: dict = Depends(get_current_user) 
+):
+    # 컨트롤러에게 요청 데이터와 유저 정보를 함께 넘김
+    return PostController.create_post(request, user, response)

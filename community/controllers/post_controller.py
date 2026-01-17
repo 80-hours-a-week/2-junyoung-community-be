@@ -1,7 +1,8 @@
 # controllers/post_controller.py
+from datetime import datetime
 from fastapi import HTTPException, Response
 from models.post_model import PostModel
-from utils import BaseResponse, PostDetail
+from utils import BaseResponse, PostCreateRequest, PostDetail, UserInfo
 
 class PostController:
     @staticmethod
@@ -64,4 +65,25 @@ class PostController:
         return BaseResponse(
             message="POST_DETAIL_GET_SUCCESS",
             data=post_detail
+        )
+
+    @staticmethod
+    def create_post(request: PostCreateRequest, user: UserInfo, response: Response):
+
+        new_post = {
+            "title": request.title,       # 클라이언트가 보낸 제목
+            "content": request.content,   # 클라이언트가 보낸 내용
+            "author": user.nickname,      
+            "profileImage": user.profileImage or "https://image.kr/img.jpg",
+            "createdAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "likeCount": 0, "commentCount": 0, "viewCount": 0
+        }
+        
+        # Model에게 저장을 부탁함
+        post_id = PostModel.create_post(new_post)
+
+        response.status_code = 201
+        return BaseResponse(
+            message="POST_CREATE_SUCCESS",
+            data={"postId": post_id}
         )

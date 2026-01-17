@@ -35,3 +35,11 @@ class PostModel:
         """ID로 게시물을 찾아 반환합니다. 없으면 None을 리턴."""
         # next()를 사용하여 리스트에서 매칭되는 첫 번째 요소를 찾음
         return next((p for p in posts_db if p["postId"] == post_id), None)
+    
+    @staticmethod
+    def create_post(post_data: dict):
+        """새 게시물을 생성하고 저장합니다."""
+        new_id = len(posts_db) + 1
+        post_data["postId"] = new_id
+        posts_db.append(post_data)
+        return new_id
