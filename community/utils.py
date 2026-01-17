@@ -1,10 +1,14 @@
 # utils.py
 from typing import Any, Generic, TypeVar, Optional
 from pydantic import BaseModel, EmailStr, Field
-from fastapi import Request, Response
+from fastapi import Request, Response, Cookie, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 
+
+
+# ⚠️ [위험] 여기서 모델을 가져옵니다. (지금은 괜찮지만...)
+from models.user_model import UserModel
 
 # 모든 응답의 표준 규격
 class BaseResponse(BaseModel):
@@ -31,3 +35,15 @@ class UserSignupRequest(BaseModel):
 class UserLoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+# 현재 로그인한 사용자를 확인하는 의존성 함수
+async def get_current_user(session_id: str | None = Cookie(default=None)):
+    if not session_id:
+        raise HTTPException(status_code=401, detail="LOGIN_REQUIRED")
+    
+    user = UserModel.get_user_by_session(session_id)
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="INVALID_SESSION")
+    
+    return user

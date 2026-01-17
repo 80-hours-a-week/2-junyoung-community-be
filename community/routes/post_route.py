@@ -1,9 +1,15 @@
 # routes/post_route.py
-from fastapi import APIRouter, Query, Path, Response
+from fastapi import APIRouter, Query, Path, Response, Depends
 from controllers.post_controller import PostController
-from utils import BaseResponse
+from utils import BaseResponse, get_current_user
 
-router = APIRouter(prefix="/api/v1")
+# router = APIRouter(prefix="/api/v1")
+# utils에 있는 함수로 문지기를 세움
+router = APIRouter(
+    prefix="/api/v1", 
+    dependencies=[Depends(get_current_user)] 
+)
+
 
 # 전체 게시물 조회
 @router.get("/posts", response_model=BaseResponse)
