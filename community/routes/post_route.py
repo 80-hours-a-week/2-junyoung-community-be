@@ -35,7 +35,7 @@ async def get_post_detail(
 async def create_post(
     response: Response,
     request: PostCreateRequest,
-    user: dict = Depends(get_current_user) 
+    user: UserInfo = Depends(get_current_user)
 ):
     # 컨트롤러에게 요청 데이터와 유저 정보를 함께 넘김
     return PostController.create_post(request, user, response)
