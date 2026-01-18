@@ -1,26 +1,28 @@
 # controllers/auth_controller.py
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 from models.user_model import UserModel
-from utils import BaseResponse
-from fastapi import Response
+from utils import BaseResponse, UserSignupRequest, UserLoginRequest
+
 
 
 class AuthController:
     @staticmethod
-    def signup(data: dict, response: Response):
+    def signup(request: UserSignupRequest, response: Response):
         # 1. 필수값 체크
-        if not data.get("email"): raise HTTPException(status_code=400, detail="EMAIL_REQUIRED")
-        if not data.get("password"): raise HTTPException(status_code=400, detail="PASSWORD_REQUIRED")
-        if not data.get("nickname"): raise HTTPException(status_code=400, detail="NICKNAME_REQUIRED")
-
+        if not request.email: raise HTTPException(status_code=400, detail="EMAIL_REQUIRED")
+        if not request.password: raise HTTPException(status_code=400, detail="PASSWORD_REQUIRED")
+        if not request.nickname: raise HTTPException(status_code=400, detail="NICKNAME_REQUIRED")
+        
         # 2. 중복 체크 (이 코드가 진짜 들어있어야 막힙니다!)
-        if UserModel.find_by_email(data["email"]):
+        if UserModel.find_by_email(request.email):
             raise HTTPException(status_code=409, detail="EMAIL_ALREADY_EXISTS")
-        if UserModel.find_by_nickname(data["nickname"]):
+        if UserModel.find_by_nickname(request.nickname):
             raise HTTPException(status_code=409, detail="NICKNAME_ALREADY_EXISTS")
 
         # 3. 저장 및 반환 (설계서 규격인 userId로 맞춤)
-        user_id = UserModel.save_user(data)
+        user_data = request.model_dump()
+        user_id = UserModel.save_user(user_data)
+
         response.status_code = 201  # 상태 코드 설정
         return BaseResponse(
             message="REGISTER_SUCCESS", 
@@ -28,21 +30,13 @@ class AuthController:
         )
     
     @staticmethod
-    def login(data: dict, response: Response):
-        email = data.get("email")
-        password = data.get("password")
+    def login(request: UserLoginRequest, response: Response):
 
-        if not email:
-            raise HTTPException(status_code=400, detail="EMAIL_REQUIRED")
-        if not password:
-            raise HTTPException(status_code=400, detail="PASSWORD_REQUIRED")
-        
-        user = UserModel.find_by_email(email)
-        if not user or user["password"] != password:
+        user = UserModel.find_by_email(request.email)
+        if not user or user["password"] != request.password:
             raise HTTPException(status_code=401, detail="LOGIN_FAILED")
 
-        session_id = UserModel.create_session(email)
-        
+        session_id = UserModel.create_session(request.email)
         # 보안을 위해 토큰은 따로 빼고 정보만 반환
         user_info = {
             "userId": user["user_id"],

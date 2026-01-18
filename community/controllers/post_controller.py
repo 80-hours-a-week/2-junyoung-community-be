@@ -1,17 +1,16 @@
 # controllers/post_controller.py
+from datetime import datetime
 from fastapi import HTTPException, Response
 from models.post_model import PostModel
-from utils import BaseResponse
+from models.comment_model import CommentModel
+from models.like_model import LikeModel
+from utils import BaseResponse, PostCreateRequest, PostDetail, UserInfo, PostUpdateRequest
 
 class PostController:
     @staticmethod
     def get_posts(offset: int, size: int, response: Response):
         """전체 게시글 목록을 가져오는 흐름 제어"""
         
-        # 1. 입력 유효성 검증
-        if size <= 0:
-            raise HTTPException(status_code=400, detail="SIZE_REQUIRED_POSITIVE")
-
         # 2. 데이터 필터링 (Model에서 데이터 획득)
         all_posts = PostModel.get_all_posts()
         filtered_posts = [p for p in all_posts if p["postId"] >= offset]
@@ -33,7 +32,6 @@ class PostController:
         
         summaries = []
         for post in posts[:size]:
-            
             # content 필드를 제외한 post 생성
             summary = {
                 "postId": post["postId"],
@@ -48,3 +46,97 @@ class PostController:
             summaries.append(summary)
 
         return summaries
+    
+    @staticmethod
+    def get_post_detail(post_id: int, response: Response) -> BaseResponse:
+        """게시글 상세 조회 및 조회수 증가"""
+        
+        # 1. 게시글 찾기
+        post = PostModel.get_post_by_id(post_id)
+        if not post:
+            raise HTTPException(status_code=404, detail="POST_NOT_FOUND")
+        
+        # 2. 조회수 증가 (비즈니스 로직)
+        # 실제 DB라면 update 쿼리를 날려야겠지만, 메모리 DB라 직접 수정
+        post["viewCount"] = post.get("viewCount", 0) + 1
+        
+        # 3. 응답 객체 변환 (Pydantic 모델 사용)
+        post_detail = PostDetail(**post)
+
+        response.status_code = 200
+        return BaseResponse(
+            message="POST_DETAIL_GET_SUCCESS",
+            data=post_detail
+        )
+
+    @staticmethod
+    def create_post(request: PostCreateRequest, user: UserInfo, response: Response):
+        """새 게시글 작성"""
+
+        new_post = {
+            "title": request.title,       # 클라이언트가 보낸 제목
+            "content": request.content,   # 클라이언트가 보낸 내용
+            "author": user.nickname,      
+            "profileImage": user.profileImage or "https://image.kr/img.jpg",
+            "createdAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "likeCount": 0, "commentCount": 0, "viewCount": 0
+        }
+        
+        # Model에게 저장을 부탁함
+        post_id = PostModel.create_post(new_post)
+
+        response.status_code = 201
+        return BaseResponse(
+            message="POST_CREATE_SUCCESS",
+            data={"postId": post_id}
+        )
+    
+    @staticmethod
+    def update_post(post_id: int, request: PostUpdateRequest, user: UserInfo, response: Response):
+        """게시글 수정: 작성자 본인만 가능"""
+        
+        # 1. 게시글 존재 확인
+        post = PostModel.get_post_by_id(post_id)
+        if not post:
+            raise HTTPException(status_code=404, detail="POST_NOT_FOUND")
+        
+        # 2. [핵심 보안] 권한 체크 (내 글이 아니면 403 Forbidden)
+        if post["author"] != user.nickname:
+            raise HTTPException(status_code=403, detail="PERMISSION_DENIED")
+        
+        # 3. 업데이트 수행
+        update_data = {
+            "title": request.title,
+            "content": request.content
+        }
+        PostModel.update_post(post_id, update_data)
+        
+        # 4. 응답
+        return BaseResponse(
+            message="POST_UPDATE_SUCCESS",
+            data={"postId": post_id}
+        )
+    
+    @staticmethod
+    def delete_post(post_id: int, user: UserInfo, response: Response):
+        """게시글 삭제: 작성자 본인만 가능"""
+        
+        # 1. 게시글 존재 확인
+        post = PostModel.get_post_by_id(post_id)
+        if not post:
+            raise HTTPException(status_code=404, detail="POST_NOT_FOUND")
+        
+        # 2. 권한 체크 (내 글이 아니면 403)
+        if post["author"] != user.nickname:
+            raise HTTPException(status_code=403, detail="PERMISSION_DENIED")
+        
+        # 3. 삭제 수행 (댓글, 좋아요도 함께 삭제)
+        CommentModel.delete_comments_by_post_id(post_id)
+        LikeModel.delete_likes_by_post_id(post_id)
+        PostModel.delete_post(post_id)
+        
+        # 4. 응답
+        return BaseResponse(
+            message="POST_DELETE_SUCCESS",
+            data=None
+        )

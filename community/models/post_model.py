@@ -29,3 +29,44 @@ class PostModel:
     @staticmethod
     def get_all_posts():
         return posts_db
+
+    @staticmethod
+    def get_post_by_id(post_id: int):
+        """ID로 게시물을 찾아 반환합니다. 없으면 None을 리턴."""
+        # next()를 사용하여 리스트에서 매칭되는 첫 번째 요소를 찾음
+        return next((p for p in posts_db if p["postId"] == post_id), None)
+    
+    @staticmethod
+    def create_post(post_data: dict):
+        """새 게시물을 생성하고 저장합니다."""
+        """DB에서 가장 큰 ID를 찾아 +1 하여 발급"""
+        new_id = 1
+        
+        if posts_db:
+            max_id = max(post["postId"] for post in posts_db)
+            new_id = max_id + 1
+            
+        post_data["postId"] = new_id
+        posts_db.append(post_data)
+        
+        return new_id
+    
+    @staticmethod
+    def update_post(post_id: int, update_data: dict):
+        """ID로 게시물을 찾아 내용을 업데이트합니다."""
+        # 리스트에서 찾아서 업데이트 (레퍼런스 참조라 원본이 바뀜)
+        for post in posts_db:
+            if post["postId"] == post_id:
+                # update_data에 있는 키들(title, content)만 덮어쓰기
+                post.update(update_data)
+                return True # 성공
+        return False # 실패
+    
+    @staticmethod
+    def delete_post(post_id: int):
+        """ID로 게시물을 찾아 리스트에서 삭제"""
+        for post in posts_db:
+            if post["postId"] == post_id:
+                posts_db.remove(post) # 리스트에서 해당 딕셔너리 제거
+                return True
+        return False

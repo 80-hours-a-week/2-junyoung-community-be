@@ -1,28 +1,66 @@
 # utils.py
-from typing import Any
-from pydantic import BaseModel
-from fastapi import Request, Response
+from typing import Any, Generic, TypeVar, Optional
+from pydantic import BaseModel, EmailStr, Field
+from fastapi import Request, Response, Cookie, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from models.user_model import UserModel
 
 # 모든 응답의 표준 규격
 class BaseResponse(BaseModel):
     message: str
     data: Any = None
 
-class WrappedAPIRoute(APIRoute):
-    def get_route_handler(self):
-        original_handler = super().get_route_handler()
+# 사용자 정보 스키마
+class UserInfo(BaseModel):
+    user_id: int
+    email: EmailStr
+    nickname: str
+    profileImage: str | None = None # 없을 수도 있음
 
-        async def custom_handler(request: Request) -> Any:
-            result = await original_handler(request)
-            
-            # 이미 완벽한 응답(Response) 객체라면 그대로 내보냄 (쿠키 등 포함)
-            if isinstance(result, Response):
-                return result
+# 게시글 생성 요청 스키마
+class PostCreateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=50, description="제목")
+    content: str = Field(min_length=5, description="내용")
 
-            # [핵심] 아무 고민 없이 JSON으로 포장만 해서 보냄
-            # status_code는 이미 요리사가 찍어둔 걸 FastAPI가 알아서 사용함
-            return JSONResponse(content=result.model_dump())
+# 게시글 수정 요청 스키마
+class PostUpdateRequest(BaseModel):
+    title: str = Field(min_length=2, max_length=50, description="수정할 제목")
+    content: str = Field(min_length=5, description="수정할 내용")
 
-        return custom_handler
+# 게시글 상세 응답용 스키마
+class PostDetail(BaseModel):
+    postId: int
+    title: str
+    author: str
+    content: str  # 목록 조회와 달리 본문이 포함됨
+    profileImage: str
+    createdAt: str
+    likeCount: int = 0
+    commentCount: int = 0
+    viewCount: int = 0
+
+class UserSignupRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    nickname: str = Field(min_length=2, max_length=30)
+
+class UserLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+# 현재 로그인한 사용자를 확인하는 의존성 함수
+async def get_current_user(session_id: str | None = Cookie(default=None)) -> UserInfo:
+    if not session_id:
+        raise HTTPException(status_code=401, detail="LOGIN_REQUIRED")
+    
+    user_dict = UserModel.get_user_by_session(session_id)
+
+    if not user_dict:
+        raise HTTPException(status_code=401, detail="INVALID_SESSION")
+    
+    return UserInfo(**user_dict)
+
+# 댓글 생성 요청 스키마
+class CommentCreateRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=200, description="댓글 내용")

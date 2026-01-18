@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from routes.post_route import router as post_router
 from routes.auth_route import router as auth_router
+from routes.comment_route import router as comment_router
+from routes.like_route import router as like_router
 
 app = FastAPI()
 
@@ -18,3 +20,5 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 app.include_router(post_router)
 app.include_router(auth_router)
+app.include_router(comment_router)
+app.include_router(like_router)
