@@ -51,3 +51,12 @@ async def update_post(
     user: UserInfo = Depends(get_current_user)
 ):
     return PostController.update_post(post_id, request, user, response)
+
+# 게시물 삭제
+@router.delete("/posts/{post_id}", response_model=BaseResponse)
+async def delete_post(
+    response: Response,
+    post_id: int = Path(..., ge=1, description="삭제할 게시글 ID"),
+    user: UserInfo = Depends(get_current_user)
+):
+    return PostController.delete_post(post_id, user, response)

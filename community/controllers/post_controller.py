@@ -113,3 +113,25 @@ class PostController:
             message="POST_UPDATE_SUCCESS",
             data={"postId": post_id}
         )
+    
+    @staticmethod
+    def delete_post(post_id: int, user: UserInfo, response: Response):
+        """게시글 삭제: 작성자 본인만 가능"""
+        
+        # 1. 게시글 존재 확인
+        post = PostModel.get_post_by_id(post_id)
+        if not post:
+            raise HTTPException(status_code=404, detail="POST_NOT_FOUND")
+        
+        # 2. 권한 체크 (내 글이 아니면 403)
+        if post["author"] != user.nickname:
+            raise HTTPException(status_code=403, detail="PERMISSION_DENIED")
+        
+        # 3. 삭제 수행
+        PostModel.delete_post(post_id)
+        
+        # 4. 응답
+        return BaseResponse(
+            message="POST_DELETE_SUCCESS",
+            data=None
+        )

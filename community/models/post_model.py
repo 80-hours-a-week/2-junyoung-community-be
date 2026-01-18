@@ -60,4 +60,13 @@ class PostModel:
                 # update_data에 있는 키들(title, content)만 덮어쓰기
                 post.update(update_data)
                 return True # 성공
-        return False # 실패 (못 찾음)
+        return False # 실패
+    
+    @staticmethod
+    def delete_post(post_id: int):
+        """ID로 게시물을 찾아 리스트에서 삭제"""
+        for post in posts_db:
+            if post["postId"] == post_id:
+                posts_db.remove(post) # 리스트에서 해당 딕셔너리 제거
+                return True
+        return False
