@@ -22,6 +22,7 @@ class UserInfo(BaseModel):
 class PostCreateRequest(BaseModel):
     title: str = Field(min_length=2, max_length=50, description="제목")
     content: str = Field(min_length=5, description="내용")
+    image: str | None = Field(default=None, description="이미지 URL (선택 사항)")
 
 # 게시글 수정 요청 스키마
 class PostUpdateRequest(BaseModel):
@@ -34,6 +35,7 @@ class PostDetail(BaseModel):
     title: str
     author: str
     content: str  # 목록 조회와 달리 본문이 포함됨
+    image: str | None = None
     profileImage: str
     createdAt: str
     likeCount: int = 0

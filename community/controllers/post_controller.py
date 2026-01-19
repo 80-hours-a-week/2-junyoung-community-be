@@ -11,7 +11,7 @@ class PostController:
     def get_posts(offset: int, size: int, response: Response):
         """전체 게시글 목록을 가져오는 흐름 제어"""
         
-        # 2. 데이터 필터링 (Model에서 데이터 획득)
+        # 데이터 필터링 (Model에서 데이터 획득)
         all_posts = PostModel.get_all_posts()
         filtered_posts = [p for p in all_posts if p["postId"] >= offset]
 
@@ -76,6 +76,7 @@ class PostController:
         new_post = {
             "title": request.title,       # 클라이언트가 보낸 제목
             "content": request.content,   # 클라이언트가 보낸 내용
+            "image": request.image,       # 클라이언트가 보낸 이미지
             "author": user.nickname,      
             "profileImage": user.profileImage or "https://image.kr/img.jpg",
             "createdAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
