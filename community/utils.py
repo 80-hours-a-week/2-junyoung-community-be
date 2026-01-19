@@ -5,6 +5,12 @@ from fastapi import Request, Response, Cookie, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from models.user_model import UserModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+# Rate limiter 설정
+# key_func=get_remote_address : 요청한 사람의 IP 주소를 기준으로 카운팅
+limiter = Limiter(key_func=get_remote_address)
 
 # 모든 응답의 표준 규격
 class BaseResponse(BaseModel):
@@ -13,7 +19,7 @@ class BaseResponse(BaseModel):
 
 # 사용자 정보 스키마
 class UserInfo(BaseModel):
-    user_id: int
+    userId: int
     email: EmailStr
     nickname: str
     profileImage: str | None = None # 없을 수도 있음
@@ -21,13 +27,13 @@ class UserInfo(BaseModel):
 # 게시글 생성 요청 스키마
 class PostCreateRequest(BaseModel):
     title: str = Field(min_length=2, max_length=50, description="제목")
-    content: str = Field(min_length=5, description="내용")
+    content: str = Field(min_length=5, max_length=10000, description="내용")
     image: str | None = Field(default=None, description="이미지 URL (선택 사항)")
 
 # 게시글 수정 요청 스키마
 class PostUpdateRequest(BaseModel):
     title: str = Field(min_length=2, max_length=50, description="수정할 제목")
-    content: str = Field(min_length=5, description="수정할 내용")
+    content: str = Field(min_length=5, max_length=10000, description="수정할 내용")
 
 # 게시글 상세 응답용 스키마
 class PostDetail(BaseModel):
@@ -53,6 +59,7 @@ class UserLoginRequest(BaseModel):
 
 # 현재 로그인한 사용자를 확인하는 의존성 함수
 async def get_current_user(session_id: str | None = Cookie(default=None)) -> UserInfo:
+    
     if not session_id:
         raise HTTPException(status_code=401, detail="LOGIN_REQUIRED")
     
@@ -61,8 +68,14 @@ async def get_current_user(session_id: str | None = Cookie(default=None)) -> Use
     if not user_dict:
         raise HTTPException(status_code=401, detail="INVALID_SESSION")
     
+    if user_dict.get("status") == "suspended":
+        raise HTTPException(status_code=403, detail="ACCOUNT_SUSPENDED")
+
     return UserInfo(**user_dict)
 
 # 댓글 생성 요청 스키마
 class CommentCreateRequest(BaseModel):
     content: str = Field(min_length=1, max_length=200, description="댓글 내용")
+
+class CommentUpdateRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=200, description="수정할 댓글 내용")

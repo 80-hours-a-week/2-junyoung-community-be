@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import HTTPException, Response
 from models.comment_model import CommentModel
 from models.post_model import PostModel # 게시글 존재 확인용
-from utils import BaseResponse, CommentCreateRequest, UserInfo
+from utils import BaseResponse, CommentCreateRequest, UserInfo, CommentUpdateRequest
 
 class CommentController:
     
@@ -49,6 +49,29 @@ class CommentController:
         return BaseResponse(message="COMMENT_CREATE_SUCCESS", data={"commentId": comment_id})
 
     @staticmethod
+    def update_comment(comment_id: int, request: CommentUpdateRequest, user: UserInfo, response: Response):
+        """댓글 수정"""
+        
+        # 1. [404] 댓글 존재 확인
+        comment = CommentModel.get_comment_by_id(comment_id)
+        if not comment:
+            raise HTTPException(status_code=404, detail="NOT_FOUND")
+            
+        # 2. [403] 권한 확인
+        if comment["author"] != user.nickname: # 혹은 userId로 비교 추천
+            raise HTTPException(status_code=403, detail="FORBIDDEN")
+            
+        # 3. [Logic] 내용 수정
+        CommentModel.update_comment(comment_id, request.content)
+        
+        # 4. [200] 성공 응답 (204 Spec 대체)
+        response.status_code = 200
+        return BaseResponse(
+            message="COMMENT_UPDATE_SUCCESS", # 요청하신 메시지
+            data=None
+        )
+
+    @staticmethod
     def delete_comment(comment_id: int, user: UserInfo):
         """댓글 삭제 (본인만 가능)"""
         
@@ -65,8 +88,9 @@ class CommentController:
         target_post = PostModel.get_post_by_id(comment["postId"])
         if target_post:
             target_post["commentCount"] -= 1
+            current_count = target_post["commentCount"]
 
         # 3. 삭제
         CommentModel.delete_comment(comment_id)
         
-        return BaseResponse(message="COMMENT_DELETE_SUCCESS", data=None)
+        return BaseResponse(message="COMMENT_DELETE_SUCCESS", data={"commentCount": current_count})
