@@ -27,13 +27,3 @@ async def remove_like(
     user: UserInfo = Depends(get_current_user)
 ):
     return LikeController.remove_like(post_id, user, response)
-
-# # 좋아요 토글 (누르면 켜지고, 다시 누르면 꺼짐)
-# @router.post("/posts/{post_id}/likes", response_model=BaseResponse)
-# @limiter.limit("10/minute")  # 분당 10회로 제한
-# async def toggle_like(
-#     request: Request,
-#     post_id: int = Path(..., ge=1),
-#     user: UserInfo = Depends(get_current_user)
-# ):
-#     return LikeController.toggle_like(post_id, user)

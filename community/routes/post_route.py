@@ -28,12 +28,11 @@ async def get_all_posts(
 async def get_post_detail(
     request: Request,
     response: Response,
-    # Path Parameter 검증: 1 이상의 정수만 허용
     post_id: int = Path(..., ge=1, description="게시글 ID (1 이상)"),
 ):
     return PostController.get_post_detail(post_id, response)
 
-# 게시물 생성
+# 게시물 추가
 @router.post("/posts", status_code=201, response_model=BaseResponse)
 @limiter.limit("10/minute")  # 분당 10회로 제한
 async def create_post(

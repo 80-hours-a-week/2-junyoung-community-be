@@ -36,6 +36,7 @@ class PostCreateRequest(BaseModel):
 class PostUpdateRequest(BaseModel):
     title: str = Field(min_length=2, max_length=50, description="수정할 제목")
     content: str = Field(min_length=5, max_length=10000, description="수정할 내용")
+    image: str | None = Field(default=None, description="수정할 이미지 URL (선택 사항)")
 
 # 게시글 상세 응답용 스키마
 class PostDetail(BaseModel):
@@ -44,8 +45,8 @@ class PostDetail(BaseModel):
     author: str
     content: str  # 목록 조회와 달리 본문이 포함됨
     image: str | None = None
-    profileImage: str
     createdAt: str
+    profileImage: str | None = None
     likeCount: int = 0
     commentCount: int = 0
     viewCount: int = 0

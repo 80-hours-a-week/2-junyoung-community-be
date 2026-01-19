@@ -1,5 +1,5 @@
 # routes/auth_route.py
-from fastapi import APIRouter, Body, Response, Request, Depends, Cookie
+from fastapi import APIRouter, Response, Request, Depends
 from controllers.auth_controller import AuthController
 from utils import UserSignupRequest, UserLoginRequest, BaseResponse, limiter, get_current_user, UserInfo, UserUpdateRequest, PasswordChangeRequest
 
@@ -13,12 +13,11 @@ async def signup(request: Request, response: Response, user_request: UserSignupR
 @router.post("/login", response_model=BaseResponse)
 @limiter.limit("10/minute")  # 분당 10회로 제한
 async def login(request: Request, response: Response, user_request: UserLoginRequest):
-    # 튜플로 나누어 받아서 에러 해결
+
     session_id, response_obj = AuthController.login(user_request, response)
 
     response.set_cookie(key="session_id", value=session_id, httponly=True)
     
-    # user_info를 반환해야 WrappedAPIRoute가 정상 작동합니다.
     return response_obj
 
 @router.post("/logout", response_model=BaseResponse)

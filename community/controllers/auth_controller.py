@@ -48,7 +48,8 @@ class AuthController:
             "userId": user["userId"],
             "email": user["email"],
             "nickname": user["nickname"],
-            "profileImage": user.get("profileImage", "https://image.kr/img.jpg")
+            "profileImage": user.get("profileImage", "https://image.kr/img.jpg"),
+            "authToken": session_id
         }
 
         response.status_code = 200  # 상태 코드 설정
