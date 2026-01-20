@@ -38,18 +38,7 @@ class PostUpdateRequest(BaseModel):
     content: str = Field(min_length=5, max_length=10000, description="수정할 내용")
     image: str | None = Field(default=None, description="수정할 이미지 URL (선택 사항)")
 
-# 게시글 상세 응답용 스키마
-class PostDetail(BaseModel):
-    postId: int
-    title: str
-    author: str
-    content: str  # 목록 조회와 달리 본문이 포함됨
-    image: str | None = None
-    createdAt: str
-    profileImage: str | None = None
-    likeCount: int = 0
-    commentCount: int = 0
-    viewCount: int = 0
+
 
 class UserSignupRequest(BaseModel):
     email: EmailStr
@@ -92,3 +81,36 @@ class CommentCreateRequest(BaseModel):
 
 class CommentUpdateRequest(BaseModel):
     content: str = Field(min_length=1, max_length=200, description="수정할 댓글 내용")
+
+# 댓글 상세 응답용 스키마
+class AuthorDetail(BaseModel):
+    userId: int
+    nickname: str
+    profileImageUrl: str | None = None
+
+# 댓글 상세 응답 스키마
+class CommentDetailResponse(BaseModel):
+    commentId: int
+    content: str
+    postId: int
+    createdAt: str
+    author: AuthorDetail
+
+# 댓글 간단 응답용 스키마
+class CommentSimple(BaseModel):
+    author: str
+    content: str
+    createdAt: str
+
+# 게시글 상세 응답용 스키마 (댓글 포함)
+class PostDetail(BaseModel):
+    postId: int
+    title: str
+    author: AuthorDetail
+    content: str
+    image: str | None = None
+    createdAt: str
+    likeCount: int = 0
+    commentCount: int = 0
+    viewCount: int = 0
+    comments: list['CommentSimple'] = []

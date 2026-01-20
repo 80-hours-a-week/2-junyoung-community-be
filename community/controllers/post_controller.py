@@ -2,9 +2,10 @@
 from datetime import datetime
 from fastapi import HTTPException, Response
 from models.post_model import PostModel
+from models.user_model import UserModel
 from models.comment_model import CommentModel
 from models.like_model import LikeModel
-from utils import BaseResponse, PostCreateRequest, PostDetail, UserInfo, PostUpdateRequest
+from utils import BaseResponse, PostCreateRequest, PostDetail, UserInfo, PostUpdateRequest, CommentSimple, AuthorDetail
 
 class PostController:
     @staticmethod
@@ -57,16 +58,53 @@ class PostController:
             raise HTTPException(status_code=404, detail="POST_NOT_FOUND")
         
         # 2. 조회수 증가 (비즈니스 로직)
-        # 실제 DB라면 update 쿼리를 날려야겠지만, 메모리 DB라 직접 수정
-        post["viewCount"] = post.get("viewCount", 0) + 1
+        PostModel.increase_view_count(post_id)
         
-        # 3. 응답 객체 변환 (Pydantic 모델 사용)
-        post_detail = PostDetail(**post)
+        # 3. [NEW] 작성자 상세 정보 찾기 (Join)
+        # 게시글의 author(닉네임)로 유저 DB 검색
+        post_author = UserModel.find_by_nickname(post["author"])
+        
+        # 유저 정보를 찾아서 AuthorDetail 객체 생성
+        if post_author:
+            author_data = AuthorDetail(
+                userId=post_author["userId"],
+                nickname=post_author["nickname"],
+                profileImageUrl=post_author.get("profileImage")
+            )
+        else:
+            # 탈퇴한 회원이거나 정보가 없을 경우 방어 코드
+            author_data = AuthorDetail(
+                userId=0, 
+                nickname=post["author"], 
+                profileImageUrl=None
+            )
 
-        response.status_code = 200
+        # 4. 댓글 목록 가져오기 (기존 로직 유지)
+        raw_comments = CommentModel.get_comments_by_post_id(post_id)
+        comment_list = []
+        for c in raw_comments:
+            comment_list.append(CommentSimple(
+                author=c["author"],  # 닉네임
+                content=c["content"], # 내용
+                createdAt=c.get("createdAt", "") # 작성일
+            )) 
+
+        # 5. 최종 응답 생성
+        response_data = PostDetail(
+            postId=post["postId"],
+            title=post["title"],
+            author=author_data,
+            content=post["content"],
+            createdAt=post["createdAt"],
+            likeCount=post["likeCount"],
+            commentCount=len(comment_list),
+            viewCount=post["viewCount"],
+            comments=comment_list # (아까 만든 댓글 리스트 변수)
+        )
+        
         return BaseResponse(
             message="POST_DETAIL_GET_SUCCESS",
-            data=post_detail
+            data=response_data
         )
 
     @staticmethod

@@ -7,9 +7,9 @@ users_db = [
     {
         "userId": 1,
         "email": "test@startupcode.kr",
-        "password": "password", 
+        "password": "$2b$12$cTUCcDU65EhBkjQ5zp1d6evJK5WYr6kDupoT0wwcWIQ04uXU7mEby", #password", 
         "nickname": "startup",
-        "profileImage": "https://image.kr/img.jpg",
+        "profileImage": "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
         "status": "active"      # 정상 계정
     },
     {
