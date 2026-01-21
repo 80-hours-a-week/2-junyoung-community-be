@@ -2,8 +2,9 @@
 from datetime import datetime
 from fastapi import HTTPException, Response
 from models.comment_model import CommentModel
+from models.user_model import UserModel
 from models.post_model import PostModel # 게시글 존재 확인용
-from utils import BaseResponse, CommentCreateRequest, UserInfo
+from utils import BaseResponse, CommentCreateRequest, UserInfo, CommentUpdateRequest, AuthorDetail, CommentDetailResponse
 
 class CommentController:
     
@@ -16,12 +17,45 @@ class CommentController:
         if not post:
             raise HTTPException(status_code=404, detail="POST_NOT_FOUND")
             
-        # 2. 존재한다면 댓글 목록 가져오기
+        # 2. 댓글 목록 가져오기
         comments = CommentModel.get_comments_by_post_id(post_id)
+        
+        response_list = []
+
+        for comment in comments:
+            # 댓글에 적힌 작성자 닉네임으로 유저 정보를 찾습니다.
+            # (만약 DB에 userId로 저장했다면 find_by_id로 찾으면 됩니다)
+            author_user = UserModel.find_by_nickname(comment["author"])
+            
+            # 유저가 탈퇴해서 없을 수도 있으니 방어 로직
+            if author_user:
+                author_data = AuthorDetail(
+                    userId=author_user["userId"],
+                    nickname=author_user["nickname"],
+                    # DB엔 profileImage지만, 요청하신 응답은 profileImageUrl이므로 이름 변경 매핑
+                    profileImageUrl=author_user.get("profileImage") 
+                )
+            else:
+                # 탈퇴한 유저 처리 (더미 데이터)
+                author_data = AuthorDetail(
+                    userId=0,
+                    nickname="(알수없음)",
+                    profileImageUrl=None
+                )
+
+            # 최종 데이터 조립
+            response_data = CommentDetailResponse(
+                commentId=comment["commentId"],
+                content=comment["content"],
+                postId=comment["postId"],
+                createdAt=comment.get("createdAt", ""),
+                author=author_data # 객체 넣기
+            )
+            response_list.append(response_data)
         
         return BaseResponse(
             message="COMMENT_LIST_SUCCESS", 
-            data=comments
+            data=response_list
         )
 
     @staticmethod
@@ -49,6 +83,29 @@ class CommentController:
         return BaseResponse(message="COMMENT_CREATE_SUCCESS", data={"commentId": comment_id})
 
     @staticmethod
+    def update_comment(comment_id: int, request: CommentUpdateRequest, user: UserInfo, response: Response):
+        """댓글 수정"""
+        
+        # 1. [404] 댓글 존재 확인
+        comment = CommentModel.get_comment_by_id(comment_id)
+        if not comment:
+            raise HTTPException(status_code=404, detail="NOT_FOUND")
+            
+        # 2. [403] 권한 확인
+        if comment["author"] != user.nickname: # 혹은 userId로 비교 추천
+            raise HTTPException(status_code=403, detail="FORBIDDEN")
+            
+        # 3. [Logic] 내용 수정
+        CommentModel.update_comment(comment_id, request.content)
+        
+        # 4. [200] 성공 응답 (204 Spec 대체)
+        response.status_code = 200
+        return BaseResponse(
+            message="COMMENT_UPDATE_SUCCESS", # 요청하신 메시지
+            data=None
+        )
+
+    @staticmethod
     def delete_comment(comment_id: int, user: UserInfo):
         """댓글 삭제 (본인만 가능)"""
         
@@ -65,8 +122,9 @@ class CommentController:
         target_post = PostModel.get_post_by_id(comment["postId"])
         if target_post:
             target_post["commentCount"] -= 1
+            current_count = target_post["commentCount"]
 
         # 3. 삭제
         CommentModel.delete_comment(comment_id)
         
-        return BaseResponse(message="COMMENT_DELETE_SUCCESS", data=None)
+        return BaseResponse(message="COMMENT_DELETE_SUCCESS", data={"commentCount": current_count})

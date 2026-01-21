@@ -6,7 +6,7 @@ posts_db = [
         "title": "제목 1",
         "author": "더미 작성자1",
         "content": "이것은 1번 게시글의 아주 긴 상세 내용입니다. 목록에서는 보이지 않아야 합니다.",
-        "profileImage": "https://image.kr/img.jpg",
+        "profileImage": "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
         "createdAt": "2021-01-01 00:00:00",
         "likeCount": 0,
         "commentCount": 0,
@@ -17,7 +17,7 @@ posts_db = [
         "title": "제목 2",
         "author": "더미 작성자2",
         "content": "2번 게시글의 내용입니다. 역시 목록 조회 시에는 제외됩니다.",
-        "profileImage": "https://image.kr/img.jpg",
+        "profileImage": "https://cdn.pixabay.com/photo/2017/06/13/12/53/profile-2398782_1280.png",
         "createdAt": "2021-01-01 00:00:00",
         "likeCount": 5,
         "commentCount": 2,
@@ -68,5 +68,14 @@ class PostModel:
         for post in posts_db:
             if post["postId"] == post_id:
                 posts_db.remove(post) # 리스트에서 해당 딕셔너리 제거
+                return True
+        return False
+    
+    @staticmethod
+    def increase_view_count(post_id: int):
+        """조회수 1 증가"""
+        for post in posts_db:
+            if post["postId"] == post_id:
+                post["viewCount"] += 1
                 return True
         return False

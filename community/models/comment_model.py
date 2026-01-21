@@ -18,6 +18,16 @@ class CommentModel:
         return new_id
 
     @staticmethod
+    def update_comment(comment_id: int, content: str):
+        '''댓글 내용 수정'''
+        for comment in comments_db:
+            if comment["commentId"] == comment_id:
+                comment["content"] = content
+                comment["updatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                return True
+        return False
+
+    @staticmethod
     def get_comments_by_post_id(post_id: int):
         '''특정 게시글의 댓글 목록 조회'''
         # 리스트 컴프리헨션으로 필터링 (SQL의 WHERE post_id = ? 와 같음)
