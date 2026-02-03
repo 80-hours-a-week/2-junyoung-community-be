@@ -4,6 +4,9 @@ from models.user_model import UserModel
 from utils import BaseResponse, UserSignupRequest, UserLoginRequest, UserInfo
 from security import SecurityUtils
 
+BASE_URL = "http://127.0.0.1:8000"
+
+
 class AuthController:
 
     @staticmethod
@@ -35,20 +38,28 @@ class AuthController:
             raise HTTPException(status_code=401, detail="LOGIN_FAILED")
         
         # 2. [403] 정지된 계정 체크 (ACCOUNT_SUSPENDED)
-        if user.get("status") == "suspended":
+        if user.get("status") == "suspended_perm":
             raise HTTPException(status_code=403, detail="ACCOUNT_SUSPENDED")
         
+        elif user.get("status") == "suspended_temp":
+            # 일시 정지의 경우, 언제 정지됐는지 정보를 함께 주면 더 친절하겠지?
+            detail_msg = f"ACCOUNT_TEMPORARILY_SUSPENDED (Started at: {user.get('suspensionStart')})"
+            raise HTTPException(status_code=403, detail=detail_msg)
+
         # 3. [409] 이미 로그인된 계정 체크 (ALREADY_LOGIN)
         if UserModel.is_already_logged_in(request.email):
             raise HTTPException(status_code=409, detail="ALREADY_LOGIN")
 
-        session_id = UserModel.create_session(request.email)
+        session_id = UserModel.create_session(user["userId"])
         # 보안을 위해 토큰은 따로 빼고 정보만 반환
+        db_path = user.get("profile_url")
+        full_url = f"{BASE_URL}{db_path}" if db_path else f"{BASE_URL}/public/images/default-profile.png"
+
         user_info = {
             "userId": user["userId"],
             "email": user["email"],
             "nickname": user["nickname"],
-            "profileImage": user.get("profileImage", "https://image.kr/img.jpg"),
+            "profileImage": full_url, # 여기서 이미 전체 주소를 담아 보냄
             "authToken": session_id
         }
 

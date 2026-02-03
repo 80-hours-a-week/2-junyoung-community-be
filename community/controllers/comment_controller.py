@@ -6,6 +6,8 @@ from models.user_model import UserModel
 from models.post_model import PostModel # 게시글 존재 확인용
 from utils import BaseResponse, CommentCreateRequest, UserInfo, CommentUpdateRequest, AuthorDetail, CommentDetailResponse
 
+BASE_URL = "http://127.0.0.1:8000"
+
 class CommentController:
     
     @staticmethod
@@ -29,28 +31,39 @@ class CommentController:
             
             # 유저가 탈퇴해서 없을 수도 있으니 방어 로직
             if author_user:
-                author_data = AuthorDetail(
-                    userId=author_user["userId"],
-                    nickname=author_user["nickname"],
+
+                db_path = author_user.get("profile_url")
+                
+                # [핵심] BASE_URL과 결합하여 전체 주소 생성
+                # 이미지가 없으면 기본 프로필 이미지를 연결합니다.
+                full_profile_url = f"{BASE_URL}{db_path}" if db_path else f"{BASE_URL}/public/images/default-profile.png"
+
+                author_data = {
+                    "userId" : author_user["id"],
+                    "nickname":author_user["nickname"],
                     # DB엔 profileImage지만, 요청하신 응답은 profileImageUrl이므로 이름 변경 매핑
-                    profileImageUrl=author_user.get("profileImage") 
-                )
+                    "profileImage":full_profile_url 
+                }
             else:
                 # 탈퇴한 유저 처리 (더미 데이터)
-                author_data = AuthorDetail(
-                    userId=0,
-                    nickname="(알수없음)",
-                    profileImageUrl=None
-                )
+                author_data = {
+                    "userId":0,
+                    "nickname":"(알수없음)",
+                    "profileImage":f"{BASE_URL}/public/images/default-profile.png"
+                }
 
             # 최종 데이터 조립
-            response_data = CommentDetailResponse(
-                commentId=comment["commentId"],
-                content=comment["content"],
-                postId=comment["postId"],
-                createdAt=comment.get("createdAt", ""),
-                author=author_data # 객체 넣기
-            )
+
+            raw_date = comment.get("createdAt")
+            formatted_date = raw_date.strftime("%Y-%m-%d %H:%M:%S") if isinstance(raw_date, datetime) else str(raw_date)
+
+            response_data = {
+                "commentId":comment["commentId"],
+                "content":comment["content"],
+                "postId":post_id,
+                "createdAt":formatted_date,
+                "author":author_data # 객체 넣기
+            }
             response_list.append(response_data)
         
         return BaseResponse(
@@ -67,11 +80,13 @@ class CommentController:
         if not post:
             raise HTTPException(status_code=404, detail="POST_NOT_FOUND")
             
+        target_post = post[0] if isinstance(post, list) and len(post) > 0 else post
+
         # 2. 댓글 데이터 조립 (Foreign Key: postId 포함)
         new_comment = {
             "postId": post_id,                # 어떤 글에 달린 댓글인지 연결고리
             "content": request.content,
-            "author": user.nickname,          # 작성자
+            "userId": user.userId,          # 작성자
             "profileImage": user.profileImage or "https://image.kr/default.jpg",
             "createdAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -91,10 +106,13 @@ class CommentController:
         if not comment:
             raise HTTPException(status_code=404, detail="NOT_FOUND")
             
-        # 2. [403] 권한 확인
-        if comment["author"] != user.nickname: # 혹은 userId로 비교 추천
+        db_author_id = comment.get('userId')
+
+        # 2. 권한 확인: DB에 저장된 유저ID와 현재 로그인한 유저ID(숫자)를 비교
+        if db_author_id != user.userId:
+            # 로그를 찍어보면 확실히 알 수 있습니다.
+            print(f"권한 에러 - DB 주인 ID: {db_author_id}, 접속 유저 ID: {user.userId}")
             raise HTTPException(status_code=403, detail="FORBIDDEN")
-            
         # 3. [Logic] 내용 수정
         CommentModel.update_comment(comment_id, request.content)
         
@@ -115,7 +133,7 @@ class CommentController:
             raise HTTPException(status_code=404, detail="COMMENT_NOT_FOUND")
             
         # 2. 권한 확인
-        if comment["author"] != user.nickname:
+        if comment.get("userId") != user.userId:
             raise HTTPException(status_code=403, detail="PERMISSION_DENIED")
             
         # 댓글이 달린 게시글의 commentCount 감소

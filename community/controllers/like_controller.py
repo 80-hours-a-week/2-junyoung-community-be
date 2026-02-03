@@ -4,6 +4,9 @@ from models.like_model import LikeModel
 from models.post_model import PostModel
 from utils import BaseResponse, UserInfo
 
+BASE_URL = "http://127.0.0.1:8000"
+
+
 class LikeController:
     
     @staticmethod

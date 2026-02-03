@@ -1,7 +1,6 @@
 # models/like_model.py
-
-# 좋아요 저장소: [{"nickname": "junyoung", "postId": 1}, ...]
-likes_db = []
+from sqlalchemy import text
+from database import engine
 
 class LikeModel:
     
@@ -25,26 +24,32 @@ class LikeModel:
 
     @staticmethod
     def has_liked(userId: int, post_id: int):
-        """좋아요 눌렀는지 확인"""
-        for like in likes_db:
-            if like["userId"] == userId and like["postId"] == post_id:
-                return True
-        return False
+        """DB에서 유저의 좋아요 여부 확인"""
+        with engine.connect() as conn:
+            query = text("SELECT id FROM post_likes WHERE post_id = :post_id AND user_id = :user_id")
+            result = conn.execute(query, {"post_id": post_id, "user_id": userId}).fetchone()
+            return True if result else False
         
     @staticmethod
     def add_like(userId: int, post_id: int):
-        """좋아요 추가"""
-        likes_db.append({"userId": userId, "postId": post_id})
+        """DB에 좋아요 추가"""
+        with engine.connect() as conn:
+            query = text("INSERT INTO post_likes (post_id, user_id) VALUES (:post_id, :user_id)")
+            conn.execute(query, {"post_id": post_id, "user_id": userId})
+            conn.commit()
 
     @staticmethod
     def remove_like(userId: int, post_id: int):
         """좋아요 삭제"""
-        for like in likes_db:
-            if like["userId"] == userId and like["postId"] == post_id:
-                likes_db.remove(like)
-                return
+        with engine.connect() as conn:
+            query = text("DELETE FROM post_likes WHERE post_id = :post_id AND user_id = :user_id")
+            conn.execute(query, {"post_id": post_id, "user_id": userId})
+            conn.commit()
 
     @staticmethod
     def delete_likes_by_post_id(post_id: int):
         """게시글 삭제 시 관련 좋아요 기록도 싹 지우기 (Cascade Delete)"""
-        likes_db[:] = [l for l in likes_db if l["postId"] != post_id]
+        with engine.connect() as conn:
+            query = text("DELETE FROM post_likes WHERE post_id = :post_id")
+            conn.execute(query, {"post_id": post_id})
+            conn.commit()

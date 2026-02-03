@@ -1,10 +1,30 @@
 # controllers/user_controller.py
-from fastapi import HTTPException
+import os
+import uuid
+from fastapi import HTTPException,UploadFile
 from models.user_model import UserModel
 from utils import BaseResponse, UserInfo, UserUpdateRequest, PasswordChangeRequest
 from security import SecurityUtils
+from utils import FileService, BaseResponse
+
+BASE_URL = "http://127.0.0.1:8000"
+
 
 class UserController:
+    @staticmethod
+    async def upload_profile(file: UploadFile):
+        try:
+            # 서비스 레이어를 통해 파일 저장
+            file_url = await FileService.save_file(file)
+            
+            return BaseResponse(
+                message="FILE_UPLOAD_SUCCESS",
+                data={"profileImageUrl": file_url}
+            )
+        except Exception as e:
+            # 시니어 팁: 로그는 상세히, 클라이언트 응답은 간결하게
+            print(f"Upload error log: {e}")
+            raise HTTPException(status_code=500, detail="IMAGE_UPLOAD_FAILED")
 
     @staticmethod
     def check_permission(userId: int, current_user: UserInfo):
@@ -17,11 +37,15 @@ class UserController:
         """회원 정보 조회"""
         # 1. 권한 확인 (내 정보만 볼 수 있음)
         UserController.check_permission(userId, current_user)
-        
         # 2. 유저 조회
         user = UserModel.find_by_id(userId)
         if not user:
             raise HTTPException(status_code=404, detail="USER_NOT_FOUND")
+
+        # 프로필 이미지 경로 조립
+        db_path = user.get("profileImage")
+        full_url = f"{BASE_URL}{db_path}" if db_path else f"{BASE_URL}/public/images/default-profile.png"
+        print(f"DB에서 가져온 경로: {user.get('profileImage')}")
 
         # 3. 반환 (비밀번호 제외)
         return BaseResponse(
@@ -30,7 +54,7 @@ class UserController:
                 "userId": user["userId"],
                 "email": user["email"],
                 "nickname": user["nickname"],
-                "profileImage": user.get("profileImage"),
+                "profileImage": full_url,
                 "status": user.get("status", "suspended")
             }
         )
@@ -45,7 +69,12 @@ class UserController:
             if UserModel.find_by_nickname(request.nickname):
                 raise HTTPException(status_code=409, detail="NICKNAME_ALREADY_EXISTS")
 
-        UserModel.update_user(userId, request.model_dump())
+        update_data = {
+        "nickname": request.nickname,
+        "profile_url": request.profileImage  # 프론트에서 보내는 필드명 확인 필요
+        }
+        
+        UserModel.update_user(userId, update_data)
         
         return BaseResponse(message="USER_UPDATE_SUCCESS", data=None)
 
@@ -54,11 +83,6 @@ class UserController:
         """비밀번호 변경"""
         UserController.check_permission(userId, current_user)
 
-        # 1. 현재 비밀번호 확인 (DB에서 직접 조회하여 비교)
-        user = UserModel.find_by_id(userId)
-        if not SecurityUtils.verify_password(request.currentPassword, user["password"]):
-            raise HTTPException(status_code=401, detail="PASSWORD_MISMATCH")
-        
         # 2. 변경
         UserModel.update_password(userId, request.newPassword)
         

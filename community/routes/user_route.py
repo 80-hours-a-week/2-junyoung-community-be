@@ -1,5 +1,5 @@
 # routes/user_route.py
-from fastapi import APIRouter, Path, Request, Depends
+from fastapi import APIRouter, Path, Request, Depends, UploadFile, File
 from controllers.user_controller import UserController
 from utils import BaseResponse, UserInfo, UserUpdateRequest, PasswordChangeRequest, get_current_user, limiter
 
@@ -25,6 +25,11 @@ async def update_user_info(
     current_user: UserInfo = Depends(get_current_user)
 ):
     return UserController.update_user_info(userId, user_request, current_user)
+
+@router.post("/upload-profile")
+async def upload_profile_image(file: UploadFile = File(...)):
+    # 로직은 컨트롤러에게 전적으로 맡깁니다.
+    return await UserController.upload_profile(file)
 
 # 3. 비밀번호 변경
 @router.put("/{userId}/password", response_model=BaseResponse)

@@ -10,9 +10,32 @@ from routes.like_route import router as like_router
 from routes.user_route import router as user_router
 from slowapi.errors import RateLimitExceeded
 from utils import limiter
+from fastapi.middleware.cors import CORSMiddleware
+from database import engine  # DB 엔진 가져오기
+from models.user_model import UserModel  # 수정한 유저 모델
+from fastapi.staticfiles import StaticFiles
+
 
 app = FastAPI()
 
+# 허용할 프론트엔드 주소 목록
+origins = [
+    "http://localhost:5500",      # 로컬 개발 환경 (localhost)
+    "http://127.0.0.1:5500",    # 로컬 개발 환경 (IP 주소)
+    # "https://your-domain.com",  # 나중에 실제 배포할 도메인
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # 특정 주소만 허용
+    allow_credentials=True,      # 쿠키/인증 정보 포함 허용 (로그인 구현 시 필수)
+    allow_methods=["*"],         # 모든 HTTP 메서드(GET, POST, PUT, DELETE 등) 허용
+    allow_headers=["*"],         # 모든 HTTP 헤더 허용
+)
+
+@app.get("/")
+def read_root():
+    return {"message": "CORS 설정이 완료되었습니다."}
 
 # Rate Limiter
 app.state.limiter = limiter
@@ -54,8 +77,19 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"message": "INTERNAL_SERVER_ERROR", "data": None}
     )
 
+# main.py (진짜 딱 연결만 확인하는 용도)
+@app.get("/db-ping")
+def db_ping():
+    from database import engine
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT 'OK'")).fetchone()
+        return {"result": result[0]} # 'OK'가 나오면 DB 연결은 완벽하다는 뜻!
+
 app.include_router(post_router)
 app.include_router(auth_router)
 app.include_router(comment_router)
 app.include_router(like_router)
 app.include_router(user_router)
+
+app.mount("/public", StaticFiles(directory="public"), name="public")

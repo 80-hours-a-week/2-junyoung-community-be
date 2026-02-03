@@ -7,11 +7,33 @@ from fastapi.routing import APIRoute
 from models.user_model import UserModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import os
+import uuid
+from fastapi import UploadFile
 
 
 # Rate limiter 설정
 # key_func=get_remote_address : 요청한 사람의 IP 주소를 기준으로 카운팅
 limiter = Limiter(key_func=get_remote_address)
+
+
+class FileService:
+    UPLOAD_DIR = "public/images"
+
+    @classmethod
+    async def save_file(cls, file: UploadFile) -> str:
+        """파일을 저장하고 접근 가능한 상대 경로를 반환합니다."""
+        # 파일명 생성 로직
+        extension = os.path.splitext(file.filename)[1]
+        filename = f"{uuid.uuid4()}{extension}"
+        file_path = os.path.join(cls.UPLOAD_DIR, filename)
+
+        # 실제 저장 로직 (나중에 이 부분만 S3 업로드 코드로 바꾸면 됩니다)
+        with open(file_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        
+        return f"/public/images/{filename}"
 
 # 모든 응답의 표준 규격
 class BaseResponse(BaseModel):
