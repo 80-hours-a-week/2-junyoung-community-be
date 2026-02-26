@@ -6,9 +6,7 @@ from models.user_model import UserModel
 from utils import BaseResponse, UserInfo, UserUpdateRequest, PasswordChangeRequest
 from security import SecurityUtils
 from utils import FileService, BaseResponse
-
-BASE_URL = "http://127.0.0.1:8000"
-
+from config import BASE_URL
 
 class UserController:
     @staticmethod
@@ -85,6 +83,9 @@ class UserController:
 
         # 2. 변경
         UserModel.update_password(userId, request.newPassword)
+
+        # 3. 모든 세션 삭제 (강제 로그아웃)
+        UserModel.delete_all_sessions_by_user(userId)
         
         return BaseResponse(message="PASSWORD_CHANGE_SUCCESS", data=None)
 

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Path, Response, Depends, Request
 from controllers.comment_controller import CommentController
 from utils import BaseResponse, CommentCreateRequest, UserInfo, get_current_user, limiter, CommentUpdateRequest
 
-router = APIRouter(prefix="/api/v1/comments")
+router = APIRouter(prefix="/comments")
 
 # 1. 댓글 목록 조회 
 @router.get("/posts/{post_id}", response_model=BaseResponse)

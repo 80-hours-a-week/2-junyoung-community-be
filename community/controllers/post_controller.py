@@ -6,8 +6,7 @@ from models.user_model import UserModel
 from models.comment_model import CommentModel
 from models.like_model import LikeModel
 from utils import BaseResponse, PostCreateRequest, PostDetail, UserInfo, PostUpdateRequest, CommentSimple, AuthorDetail, FileService
-
-BASE_URL = "http://127.0.0.1:8000"
+from config import BASE_URL
 
 class PostController:
     @staticmethod

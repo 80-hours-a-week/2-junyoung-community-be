@@ -78,7 +78,7 @@ class UserUpdateRequest(BaseModel):
 
 # 비밀번호 변경 요청
 class PasswordChangeRequest(BaseModel):
-    currentPassword: str = Field(..., description="현재 비밀번호")
+    # currentPassword: str = Field(..., description="현재 비밀번호")
     newPassword: str = Field(min_length=8, description="새로운 비밀번호")
 
 # 현재 로그인한 사용자를 확인하는 의존성 함수

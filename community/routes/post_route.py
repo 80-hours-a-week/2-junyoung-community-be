@@ -5,12 +5,12 @@ from utils import BaseResponse, get_current_user, UserInfo, PostCreateRequest, P
 
 # router = APIRouter(prefix="/api/v1")
 router = APIRouter(
-    prefix="/api/v1"
+    prefix="/posts"
     )
 
 
 # 전체 게시물 조회
-@router.get("/posts", response_model=BaseResponse)
+@router.get("", response_model=BaseResponse)
 @limiter.limit("20/minute")  # 분당 20회로 제한
 async def get_all_posts(
     request: Request,
@@ -22,7 +22,7 @@ async def get_all_posts(
     return PostController.get_posts(lastPostId, size, response)
 
 # 상세 게시물 조회
-@router.get("/posts/{post_id}", response_model=BaseResponse)
+@router.get("/{post_id}", response_model=BaseResponse)
 @limiter.limit("20/minute")  # 분당 30회로 제한
 async def get_post_detail(
     request: Request,
@@ -33,7 +33,7 @@ async def get_post_detail(
     return PostController.get_post_detail(post_id, response, user)
 
 # 게시물 추가
-@router.post("/posts", status_code=201, response_model=BaseResponse)
+@router.post("", status_code=201, response_model=BaseResponse)
 @limiter.limit("10/minute")  # 분당 10회로 제한
 async def create_post(
     request: Request,
@@ -44,7 +44,7 @@ async def create_post(
     # 컨트롤러에게 요청 데이터와 유저 정보를 함께 넘김
     return PostController.create_post(post_request, user, response)
 
-@router.post("/posts/upload", response_model=BaseResponse)
+@router.post("/upload", response_model=BaseResponse)
 async def upload_post_image(
     image: UploadFile = File(...),
     user: UserInfo = Depends(get_current_user)
@@ -53,7 +53,7 @@ async def upload_post_image(
     return await PostController.upload_image(image)
 
 # 게시물 수정
-@router.put("/posts/{post_id}", response_model=BaseResponse)
+@router.put("/{post_id}", response_model=BaseResponse)
 @limiter.limit("10/minute")  # 분당 10회로 제한
 async def update_post(
     request: Request,
@@ -66,7 +66,7 @@ async def update_post(
     return PostController.update_post(post_id, post_request, user, response)
 
 # 게시물 삭제
-@router.delete("/posts/{post_id}", response_model=BaseResponse)
+@router.delete("/{post_id}", response_model=BaseResponse)
 @limiter.limit("10/minute")  # 분당 10회로 제한
 async def delete_post(
     request: Request,

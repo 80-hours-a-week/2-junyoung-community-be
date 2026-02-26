@@ -8,7 +8,7 @@ name = "community-project"
 version = "0.1.0"
 description = "FastAPI 기반 커뮤니티 백엔드 시스템"
 readme = "README.md"
-requires-python = ">=3.13.10"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "이준영", email = "jylee0005@gmail.com"}
@@ -39,7 +39,12 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "bcrypt==3.2.0",           
     "slowapi>=0.1.9",          
-    "email-validator>=2.1.0"
+    "email-validator>=2.1.0",
+    "sqlalchemy>=2.0.0",       # DB 연결 필수
+    "pymysql>=1.0.0",          # MySQL 드라이버
+    "python-multipart>=0.0.9",  # 로그인/파일업로드 필수
+    "cryptography",
+    "python-dotenv"
 ]
 
 [project.optional-dependencies]

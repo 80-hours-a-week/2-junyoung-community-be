@@ -3,7 +3,7 @@ from fastapi import APIRouter, Path, Request, Depends, UploadFile, File
 from controllers.user_controller import UserController
 from utils import BaseResponse, UserInfo, UserUpdateRequest, PasswordChangeRequest, get_current_user, limiter
 
-router = APIRouter(prefix="/api/v1/users")
+router = APIRouter(prefix="/users")
 
 # 1. 회원 정보 조회
 @router.get("/{userId}", response_model=BaseResponse)

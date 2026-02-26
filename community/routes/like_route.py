@@ -4,10 +4,10 @@ from controllers.like_controller import LikeController
 from utils import BaseResponse, UserInfo, get_current_user, limiter
 
 
-router = APIRouter(prefix="/api/v1")
+router = APIRouter(prefix="/posts")
 
 # 1. 좋아요 추가 (POST)
-@router.post("/posts/{post_id}/likes", status_code=201, response_model=BaseResponse)
+@router.post("/{post_id}/likes", status_code=201, response_model=BaseResponse)
 @limiter.limit("20/minute") # 도배 방지
 async def add_like(
     request: Request,
@@ -18,7 +18,7 @@ async def add_like(
     return LikeController.add_like(post_id, user, response)
 
 # 2. 좋아요 취소 (DELETE)
-@router.delete("/posts/{post_id}/likes", response_model=BaseResponse)
+@router.delete("/{post_id}/likes", response_model=BaseResponse)
 @limiter.limit("20/minute") # 도배 방지
 async def remove_like(
     request: Request,

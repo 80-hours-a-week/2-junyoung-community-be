@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine  # DB 엔진 가져오기
 from models.user_model import UserModel  # 수정한 유저 모델
 from fastapi.staticfiles import StaticFiles
-
+from config import BASE_URL
 
 app = FastAPI()
 
@@ -22,7 +22,9 @@ app = FastAPI()
 origins = [
     "http://localhost:5500",      # 로컬 개발 환경 (localhost)
     "http://127.0.0.1:5500",    # 로컬 개발 환경 (IP 주소)
-    # "https://your-domain.com",  # 나중에 실제 배포할 도메인
+    "http://dlwnsdud.duckdns.org",    # 나중에 실제 배포할 도메인
+    BASE_URL,
+    "http://16.176.210.239",
 ]
 
 app.add_middleware(
@@ -86,10 +88,16 @@ def db_ping():
         result = conn.execute(text("SELECT 'OK'")).fetchone()
         return {"result": result[0]} # 'OK'가 나오면 DB 연결은 완벽하다는 뜻!
 
-app.include_router(post_router)
-app.include_router(auth_router)
-app.include_router(comment_router)
-app.include_router(like_router)
-app.include_router(user_router)
+# app.include_router(post_router)
+# app.include_router(auth_router)
+# app.include_router(comment_router)
+# app.include_router(like_router)
+# app.include_router(user_router)
+
+app.include_router(post_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(comment_router, prefix="/api/v1")
+app.include_router(like_router, prefix="/api/v1")
+app.include_router(user_router, prefix="/api/v1")
 
 app.mount("/public", StaticFiles(directory="public"), name="public")

@@ -3,8 +3,7 @@ from fastapi import HTTPException, Response
 from models.user_model import UserModel
 from utils import BaseResponse, UserSignupRequest, UserLoginRequest, UserInfo
 from security import SecurityUtils
-
-BASE_URL = "http://127.0.0.1:8000"
+from config import BASE_URL
 
 
 class AuthController:
@@ -52,8 +51,12 @@ class AuthController:
 
         session_id = UserModel.create_session(user["userId"])
         # 보안을 위해 토큰은 따로 빼고 정보만 반환
-        db_path = user.get("profile_url")
-        full_url = f"{BASE_URL}{db_path}" if db_path else f"{BASE_URL}/public/images/default-profile.png"
+        db_path = user.get("profileImage")
+
+        if db_path:
+            full_url = f"{BASE_URL}{db_path}"
+        else:
+            full_url = f"{BASE_URL}/public/images/default-profile.png"
 
         user_info = {
             "userId": user["userId"],
@@ -78,3 +81,18 @@ class AuthController:
         response.delete_cookie(key="session_id")
         
         return BaseResponse(message="LOGOUT_SUCCESS", data=None)
+
+    @staticmethod
+    def check_duplicate(type: str, value: str):
+        is_duplicate = False
+        if type == "email":
+            is_duplicate = UserModel.find_by_email(value) is not None
+        elif type == "nickname":
+            is_duplicate = UserModel.find_by_nickname(value) is not None
+        
+        # 프론트엔드에서 사용하기 편하게 JSON 형태로 반환
+        return {
+                "type": type,
+                "value": value,
+                "is_duplicate": is_duplicate
+            }

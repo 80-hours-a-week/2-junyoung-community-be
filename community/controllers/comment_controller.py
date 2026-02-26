@@ -5,8 +5,7 @@ from models.comment_model import CommentModel
 from models.user_model import UserModel
 from models.post_model import PostModel # 게시글 존재 확인용
 from utils import BaseResponse, CommentCreateRequest, UserInfo, CommentUpdateRequest, AuthorDetail, CommentDetailResponse
-
-BASE_URL = "http://127.0.0.1:8000"
+from config import BASE_URL
 
 class CommentController:
     
